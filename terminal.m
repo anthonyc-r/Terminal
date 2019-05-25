@@ -1,3 +1,18 @@
+/*
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #define _GNU_SOURCE
 
 #include <sys/types.h>
@@ -13,16 +28,11 @@
 #import "TerminalWindow.h"
 #import "AppDelegate.h"
 
-
-static int master;
-static void readtty();
-
-
 int main(int argc, char **argv) {
 	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 	
 	char *slaveName = NULL;
-	master = posix_openpt(O_RDWR);
+	int master = posix_openpt(O_RDWR);
 	int slave = -1;
 	
 	if (master == -1) {
@@ -74,6 +84,7 @@ int main(int argc, char **argv) {
 		NSAutoreleasePool *pool = [NSAutoreleasePool new];
 		NSApplication *app = [NSApplication sharedApplication];
 		AppDelegate *delegate = [AppDelegate new];
+		[delegate setMasterPty: master];
 		[app setDelegate: delegate];
 		[app run];
 		[pool release];
@@ -82,28 +93,4 @@ int main(int argc, char **argv) {
 		
 	[pool release];
 	return 0;
-}
-
-static void readtty() {
-	fd_set rdSet, wrSet;
-	char line[255];
-	while (true) {
-		FD_ZERO(&rdSet);
-		FD_ZERO(&wrSet);
-		FD_SET(master, &rdSet);
-		FD_SET(master, &wrSet);
-		pselect(master + 1, &rdSet, &wrSet, NULL, NULL, NULL);
-		if (FD_ISSET(master, &rdSet)) {
-			ssize_t sz = read(master, &line, 255);
-			line[sz] = '\0';
-			write(master, line, sz);
-			printf("%s", line);
-		}
-		if (FD_ISSET(master, &wrSet)) {
-			char inp[100];
-			scanf("%s", inp);
-			write(master, inp, strlen(inp));
-			write(master, "\n", 1);
-		}
-	}
 }
