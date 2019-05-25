@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 @interface TerminalWindow: NSWindow {
 	NSTextView *textView;
+	NSMutableString *string;
 }
 
 - (void) appendText: (NSString*) text;

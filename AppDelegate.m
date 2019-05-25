@@ -42,7 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	[NSThread detachNewThreadSelector: @selector(pollPty) 
 							 toTarget: self
 						   withObject: NULL];
-	[NSTimer scheduledTimerWithTimeInterval: 1 
+	[NSTimer scheduledTimerWithTimeInterval: 0.01 
 								     target: self
 								   selector: @selector(updateUi)
 								   userInfo: NULL
@@ -130,7 +130,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 			}	
 		}
 		[innerPool release];
-		usleep(1000000L);
+		usleep(10000L);
 	}
 	[pool release];
 }

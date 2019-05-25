@@ -33,19 +33,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		[self setFrame: frame display: YES];
 		NSView *contentView = [self contentView];
 		textView = [[NSTextView alloc] initWithFrame: NSMakeRect(0, 0, 600, 373)];
+		string = [NSMutableString new];
+		[textView setString: string];
 		[contentView addSubview: textView];
 	}
 	return self;
 }
 
 - (void) appendText: (NSString*) text {
-	NSMutableString *string = [NSMutableString new];
-	[string autorelease];
-	if ([textView string]) {
-		string = [[textView string] mutableCopy];
-	}
 	[string appendString: text];
-	[textView setString: text];
+	[textView setText: string];
+	[textView setNeedsDisplay: YES];
 }
 
 
