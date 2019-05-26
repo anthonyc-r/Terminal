@@ -79,12 +79,13 @@ int main(int argc, char **argv) {
 		setenv("HOME", "/home/meguca", 1);
 		setenv("TERM", "mt", 1);
 		execvp("/bin/bash", argv);
+		exit(1);
 	} else {
 		close(slave);
 		NSAutoreleasePool *pool = [NSAutoreleasePool new];
 		NSApplication *app = [NSApplication sharedApplication];
 		AppDelegate *delegate = [AppDelegate new];
-		[delegate setMasterPty: master];
+		[delegate setPty: master];
 		[app setDelegate: delegate];
 		[app run];
 		[pool release];

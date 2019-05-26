@@ -13,13 +13,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <sys/types.h>
-#include <unistd.h>
-#include <pty.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <termios.h>
-
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
 
@@ -31,22 +24,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 - (void) applicationDidFinishLaunching: (NSNotification*)aNotification {
 	NSLog(@"NSApp did finish launching..");
-	queueLock = [NSLock new];
-	readQueue = [NSMutableArray new];
-	writeQueue = [NSMutableArray new];
-	inputBuffer = [NSMutableString new];
 	window = [TerminalWindow new];
 	[window setDelegate: self];
 	[window makeKeyAndOrderFront: self];
 	[window makeFirstResponder: self];
-	[NSThread detachNewThreadSelector: @selector(pollPty) 
-							 toTarget: self
-						   withObject: NULL];
-	[NSTimer scheduledTimerWithTimeInterval: 0.01 
-								     target: self
-								   selector: @selector(updateUi)
-								   userInfo: NULL
-								    repeats: YES];
+	NSLog(@"Creating terminal with pty: %d", pty);
+	terminal = [[Terminal alloc] initWithFileDescriptor: pty delegate: self];
+}
+
+- (void) setPty: (int)aPty {
+	pty = aPty;
 }
 
 - (void) windowWillClose: (NSNotification*)sender {
@@ -65,112 +52,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 - (void) keyDown: (NSEvent*)theEvent {
 	NSString *characters = [theEvent characters];
-	[inputBuffer appendString: characters];
-	NSLog(@"Key downasdas, characters: %@", characters);
-	NSLog(@"inputBuffer: %@", inputBuffer);
-	[window keyDown: theEvent];
+	NSLog(@"Keydown characters: '%@'", characters);
+	NSLog(@"Character code: %d", [theEvent keyCode]);
+	[terminal writeString: characters];
 }
 
-- (void) setMasterPty: (int)master {
-	masterpty = master;
+- (void) terminalDidOutputString: (NSString*)aString {
+	NSLog(@"Termina did output string: %@, on main? %d", aString, [NSThread isMainThread]);
+	[window appendText: aString];
 }
-
-- (void) updateUi {
-	NSString *readString = [self pullFromReadQueue];
-	if (readString) {
-		NSLog(@"Read queue contained content, adding to window");
-		[window appendText: readString];
-	}
-	NSString *writeString = inputBuffer;
-	if ([writeString length] > 0) {
-		NSLog(@"Input buffer contained string, %@, writing to tty", writeString);
-		inputBuffer = [NSMutableString new];
-		[self pushToWriteQueue: writeString];
-		[writeString release];
-		NSLog(@"write string after added... %@, count: %d", writeString, [writeString retainCount]);
-	}
-}
-
-- (void) pollPty {
-	NSAutoreleasePool *pool = [NSAutoreleasePool new];
-	NSLog(@"polling pty");
-	fd_set rdSet, wrSet;
-	char line[255];
-	while (true) {
-		NSAutoreleasePool *innerPool = [NSAutoreleasePool new];
-		FD_ZERO(&rdSet);
-		FD_ZERO(&wrSet);
-		FD_SET(masterpty, &rdSet);
-		FD_SET(masterpty, &wrSet);
-		pselect(masterpty + 1, &rdSet, &wrSet, NULL, NULL, NULL);
-		if (FD_ISSET(masterpty, &rdSet)) {
-			ssize_t sz = read(masterpty, &line, 255);
-			line[sz] = '\0';
-			NSString *string = [[NSString stringWithCString: line] copy];
-			NSLog(@"Read flag set, read %@", string);
-			[self pushToReadQueue: string];
-		}
-		if (FD_ISSET(masterpty, &wrSet)) {
-			NSLog(@"Write flag set.");
-			NSString *string = [self pullFromWriteQueue];
-			if (string) {
-				NSLog(@"Writing, '%@'", string);
-				int ret = write(masterpty, [string cString], [string cStringLength]);
-				if (ret == -1) {
-					NSLog(@"Failed to write to master file descriptor, exit.");
-					exit(-1);
-				}
-				//ret = write(masterpty, "\n", 1);
-				//if (ret == -1) {
-				//	NSLog(@"Failed to write to master file desc 2, exit.");
-				//	exit(-1);
-				//}
-			} else {
-				NSLog(@"Nothing to write.");
-			}	
-		}
-		[innerPool release];
-		usleep(10000L);
-	}
-	[pool release];
-}
-
-- (void) pushToReadQueue: (NSString*) string {
-	[queueLock lock];
-	[readQueue addObject: string];
-	[queueLock unlock];
-}
-
-- (NSString*) pullFromReadQueue {
-	NSString *item = NULL; 
-	[queueLock lock];
-	if ([readQueue count] > 0) {
-		item = [readQueue objectAtIndex: 0];
-		[item autorelease];
-		[readQueue removeObjectAtIndex: 0];
-	}
-	[queueLock unlock];
-	return item;
-}
-
-- (void) pushToWriteQueue: (NSString*) string {
-	[queueLock lock];
-	[writeQueue addObject: string];
-	[queueLock unlock];
-}
-
-- (NSString*) pullFromWriteQueue {
-	NSString *item = NULL;
-	[queueLock lock];
-	if ([writeQueue count] > 0) {
-		item = [writeQueue objectAtIndex: 0];
-		[item retain];
-		[item autorelease];
-		[writeQueue removeObjectAtIndex: 0];
-		NSLog(@"Pulled string, %@, from write queueu", item);
-	}
-	[queueLock unlock];
-	return item;
-}
-
 @end

@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #import "TerminalWindow.h"
 
+static NSString *const TITLE = @"Terminal";
+
 
 @implementation TerminalWindow 
 
@@ -31,6 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 							    defer: NO];
 	if (self) {
 		[self setFrame: frame display: YES];
+		[self setTitle: TITLE];
 		NSView *contentView = [self contentView];
 		textView = [[NSTextView alloc] initWithFrame: NSMakeRect(0, 0, 600, 373)];
 		string = [NSMutableString new];

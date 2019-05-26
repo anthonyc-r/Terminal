@@ -12,17 +12,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <Foundation/Foundation.h>
 
-#import <Foundation/Foundation.h>
-#import <AppKit/AppKit.h>
-#import "Terminal.h"
-#import "TerminalWindow.h"
-
-@interface AppDelegate: NSResponder<NSApplicationDelegate, NSWindowDelegate, TerminalDelegate> {
-@private
-	Terminal *terminal;
-	TerminalWindow *window;
-	int pty;
-} 
-- (void) setPty: (int)aPty;
-@end
+NSString *const TerminalOpenException = @"kTerminalOpenException";

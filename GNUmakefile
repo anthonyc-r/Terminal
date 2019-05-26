@@ -12,8 +12,8 @@ APP_NAME = Terminal
 Terminal_APPLICATION_ICON =
 
 # The Objective-C files to compile
-Terminal_OBJC_FILES = terminal.m TerminalWindow.m AppDelegate.m
-Terminal_H_FILES = TerminalWindow.h AppDelegate.h
+Terminal_OBJC_FILES = main.m Terminal.m TerminalWindow.m AppDelegate.m
+Terminal_H_FILES = TerminalWindow.h AppDelegate.h Terminal.h Exceptions.h
 
 Terminal_RESOURCE_FILES = 
 
